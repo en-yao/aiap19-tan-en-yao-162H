@@ -13,7 +13,7 @@ AIAP
 │   ├── pipe.py           (Pipeline script)  
 │   ├── config.py         (Configuration settings)
 │   ├── query.py          (Dataset query)
-├── images                (Visual results from MLP)
+├── images/               (Visual results from MLP)
 ├── README.md             (Project documentation)
 ├── eda.ipynb             (Jupyter notebook)
 ├── requirements.txt      (Python dependencies)
@@ -25,7 +25,7 @@ To run the pipeline, double click on the the bash script (run.sh).
 
 To experiment with different algorithms and parameters, 
 1. Add the algorithm name and their parameters to `param_grid` in *src/config.py*
-2. Import the model and initialize it in the `_initialize_classifiers()` method in in the `ClassifierPipeline` class found in *src/pipe.py*
+2. Import the model and initialize it in the `self.models()` method in the `ModelEvaluation` class found in *src/model_evaluation.py*
 
 To remove algorithms and parameters, comment out the algorithms and their parameters in *src/config.py*.
 
@@ -33,37 +33,34 @@ To remove algorithms and parameters, comment out the algorithms and their parame
 
 1. Data cleaning
 - *Converting column types:* Ensures that data types are correctly interpreted for downstream processing and analysis
+- *Impute missing data:* Fills in missing values to maintain dataset completeness and prevent biases
+= *Handle erroneous data:* Identifies and corrects incorrect, inconsistent, or implausible data points to improve the reliability and accuracy of analyses and models
 - *Removing duplicates:* Eliminates redundant rows to prevent bias and overrepresentation of certain data points
 - *Removing outliers:* Filters outliers to reduce skew in the data distribution 
 - *Feature selection:* Chooses only relevant features to improve model efficiency
 
-2. Create steps
-- *Imputer:* Replaces missing values in categorical data with the most frequent value
-- *Scaler:* Standardizes features to have a mean of 0 and a standard deviation of 1 for models that rely on distance metrics
-- *Encoder:* Transforms nominal categorical features into binary representations through one-hot encoding
-
-3. Set up the pipeline
-- *Steps:* Combines imputer, scaler, encoder, and classifier to streamline the data transformation and model training workflow
-- *Undersampler:* Mitigates class imbalance by reducing the number of majority class samples, enabling more balanced learning across classes
+2. Define models
 - *Classifier model:* Specifies the model type to be trained on
 
-4. Create RandomSearchCV object
-- *Pipeline:* Combines data transformation steps with model training within cross-validation
+3. Create RandomSearchCV object
 - *Param_grid:* Specifies the range of hyperparameters for optimizing model performance
 - *Cross validation:* Evaluates the model on multiple test sets to provide a more reliable estimate of model performance on new, unseen data
 - *Make predictions:* Predictions are generated on a test or hold-out set to evaluate model performance
 
-5. Compute and print performance
+4. Compute and print performance
+- *RSME:* Quantifies the model's prediction error by measuring the square root of the average squared differences between predicted and actual values, providing insight into the magnitude of errors
+- *R-squared:* Evaluates the proportion of variance in the dependent variable that the model explains, indicating the goodness of fit
 - *Precision:* Measures the model's accuracy in correctly identifying positives
 - *Recall:* Measures model's ability to capture all true positives
 - *F1 score:* Provides a balanced score that accounts for both precision and recall
 - *ROC AUC score:* Measures the model’s ability to distinguish between classes across different thresholds
 - *Confusion matrix:* Summarizes classification results, showing true positives, true negatives, false positives, and false negatives
 
-6. Visualise model performance
+5. Visualise model performance
 - *Box plots:* Show cross-validation score distributions
-- *Precision-recall curve:* Illustrates the trade-off between precision and recall for various thresholds
 - *ROC AUC curve:*  Visualizes the relationship between the true positive rate and false positive rate across thresholds
+- *Feature Importance:* Highlights the relative contributions of each feature in making predictions, helping to identify which variables are most influential in the model's decision-making process.
+- *Predicted vs Actual:* A plot that compares the predicted values from a model against the actual observed values, often used in regression analysis. It helps assess the model's accuracy and identify patterns
 
 ### Overview of key findings from the EDA 
 - **Identified object dtypes for Nutrients N, P, K:**
@@ -91,16 +88,14 @@ To remove algorithms and parameters, comment out the algorithms and their parame
 
 | Process                     | Description                                                                                       |
 |---------------------------- |---------------------------------------------------------------------------------------------------|
-| Split composite values      | Performed datatype conversion                                                                     |
-| Extract decimal from string | Extract decimal value from a string value                                                         |
-| Convert negative values     | Converts negative values to positive                                                              |
-| Impute Missing Values       | Replace missing values in features with mode                                                      |
+| Datatype conversion         | Convert object to numerica dtype                                                                  |
+| Standardise case variants   | Convert categories to title format                                                                |
+| Removed negative values     | Removed erroneous negative values                                                                 |
+| Impute Missing Values       | Replace missing values in features using prediction models                                        |
 | Remove duplicate rows       | Remove duplicated rows in the dataset                                                             |
-| Convert measurement units   | Standardise units of measurement to just one unit                                                 |
 | Remove outlier              | Remove data points that do not make sense based on domain knowledge                               |
-| Log normalisation           | Transforms the data that is highly skewed by applying a logarithmic function                      |
-| Standardisation             | Transforms the data to have a mean of 0 and a standard deviation of 1                             |
 | One-hot encoding            | Converts categorical data into binary format                                                      |
+| Label encoding              | Converts target data into numerical format                                                        |
 | Removing redundant features | Eliminating features that do not provide new or useful information                                |
 
 ### Explanation of your choice of models 
@@ -162,17 +157,17 @@ To remove algorithms and parameters, comment out the algorithms and their parame
 - **Random Forest:** Has a smoother scatterplot with less variance, indicating better generalization and reduced overfitting.
 -**Gradient Boost:** Scatterplot is tightly concentration around the diagonal, suggesting accurate predictions and reduced bias, but might exhibit minor overfitting in noisy data.
 
-<img src="images/DecisionTreeRegressor_pred_vs_actual.png" alt="Example Image" width="300" height="200">
-<img src="images/RandomForestRegressor_pred_vs_actual.png" alt="Example Image" width="300" height="200">
-<img src="images/GradientBoostingRegressor_pred_vs_actual.png" alt="Example Image" width="300" height="200">
+<img src="images/DecisionTreeRegressor_pred_vs_actual.png" alt="Example Image" width="450" height="300">
+<img src="images/RandomForestRegressor_pred_vs_actual.png" alt="Example Image" width="450" height="300">
+<img src="images/GradientBoostingRegressor_pred_vs_actual.png" alt="Example Image" width="450" height="300">
 
 <ins>**Visualising Cross validation Score**</ins>
 
 - A narrow box indicates low variance in model performance, meaning that the model is generalizing well to different subsets of the data. However the median score is around 0.5, so the model is performing moderately well, but there could be room for improvement.
 
-<img src="images/DecisionTreeRegressor_cv_scores.png" alt="Example Image" width="300" height="200">
-<img src="images/RandomForestRegressor_cv_scores.png" alt="Example Image" width="300" height="200">
-<img src="images/GradientBoostingRegressor_cv_scores.png" alt="Example Image" width="300" height="200">
+<img src="images/DecisionTreeRegressor_cv_scores.png" alt="Example Image" width="450" height="300">
+<img src="images/RandomForestRegressor_cv_scores.png" alt="Example Image" width="450" height="300">
+<img src="images/GradientBoostingRegressor_cv_scores.png" alt="Example Image" width="450" height="300">
 
 <ins>**Feature importance**</ins>
 
@@ -184,9 +179,9 @@ To remove algorithms and parameters, comment out the algorithms and their parame
 **Low importance Features**
 - **pH and EC:** pH and EC are mainly for plant nutrition and overall health, they do not directly influence the temperature of a plant growth environment. Temperature is more directly impacted by factors like light intensity, humidity, and nutrient availability (e.g., potassium)
 
-<img src="images/DecisionTreeRegressor_feature_importance.png" alt="Example Image" width="300" height="200">
-<img src="images/RandomForestRegressor_feature_importance.png" alt="Example Image" width="300" height="200">
-<img src="images/GradientBoostingRegressor_feature_importance.png" alt="Example Image" width="300" height="200">
+<img src="images/DecisionTreeRegressor_feature_importance.png" alt="Example Image" width="450" height="300">
+<img src="images/RandomForestRegressor_feature_importance.png" alt="Example Image" width="450" height="300">
+<img src="images/GradientBoostingRegressor_feature_importance.png" alt="Example Image" width="450" height="300">
    
 
 <ins>**Evalution of Decision Trees, Random Forest, and Gradient Boosting for Classification**</ins>
@@ -197,17 +192,17 @@ To remove algorithms and parameters, comment out the algorithms and their parame
 - The off-diagonal elements represent misclassifications, where the model incorrectly predicted a class for a sample.
 - For the case of both Herbs and Leafy Greens, the model misclassifies the maturity class for the vegetative and vice versa. This overlap may suggest that these classes have similar features or overlap in their characteristics, making them harder for the model to distinguish.
 
-<img src="images/DecisionTreeClassifier_confusion_matrix.png" alt="Example Image" width="300" height="200">
-<img src="images/RandomForestClassifier_confusion_matrix.png" alt="Example Image" width="300" height="200">
-<img src="images/GradientBoostingClassifier_confusion_matrix.png" alt="Example Image" width="300" height="200">
+<img src="images/DecisionTreeClassifier_confusion_matrix.png" alt="Example Image" width="450" height="300">
+<img src="images/RandomForestClassifier_confusion_matrix.png" alt="Example Image" width="450" height="300">
+<img src="images/GradientBoostingClassifier_confusion_matrix.png" alt="Example Image" width="450" height="300">
 
 <ins>**Visualising Cross validation Score**</ins>
 
 - A narrow box with a CV score around 0.8 suggests that the model has strong, stable, and consistent performance across the different folds of cross-validation. It also indicates low variance in model performance, meaning that the model is generalizing well to different subsets of the data.
 
-<img src="images/DecisionTreeClassifier_cv_scores.png" alt="Example Image" width="300" height="200">
-<img src="images/RandomForestClassifier_cv_scores.png" alt="Example Image" width="300" height="200">
-<img src="images/GradientBoostingClassifier_cv_scores.png" alt="Example Image" width="300" height="200">
+<img src="images/DecisionTreeClassifier_cv_scores.png" alt="Example Image" width="450" height="300">
+<img src="images/RandomForestClassifier_cv_scores.png" alt="Example Image" width="450" height="300">
+<img src="images/GradientBoostingClassifier_cv_scores.png" alt="Example Image" width="450" height="300">
 
 <ins>**AUC ROC**</ins>
 
@@ -215,9 +210,9 @@ To remove algorithms and parameters, comment out the algorithms and their parame
 - **Random  Forest:** High AUC than decision trees due to the ensemble method which helps reduce overfitting and improve generalisation
 - **Gradient Boosting:** Yields the highest AUC among the three, as it minimizes both bias and variance through sequential learning and error correction.
 
-<img src="images/DecisionTreeClassifier_auc_roc.png" alt="Example Image" width="300" height="200">
-<img src="images/RandomForestClassifier_auc_roc.png" alt="Example Image" width="300" height="200">
-<img src="images/GradientBoostingClassifier_auc_roc.png" alt="Example Image" width="300" height="200">
+<img src="images/DecisionTreeClassifier_auc_roc.png" alt="Example Image" width="450" height="300">
+<img src="images/RandomForestClassifier_auc_roc.png" alt="Example Image" width="450" height="300">
+<img src="images/GradientBoostingClassifier_auc_roc.png" alt="Example Image" width="450" height="300">
 
 <ins>**Feature importance**</ins>
 
@@ -230,9 +225,9 @@ To remove algorithms and parameters, comment out the algorithms and their parame
 - **Humidity:** Humidity is not as effective as the top features because plants are adapted to a wide range of humidity conditions, and many species can tolerate a variety of humidity levels depending on other factors such as soil moisture and temperature. Some plants may thrive in high humidity but can also tolerate moderate humidity if they are in environments with adequate water and temperature conditions.
 - **pH:** most plants can tolerate a range of pH values and can adjust their growth accordingly. While some plants are more adapted to acidic (e.g., blueberries), neutral (e.g., vegetables), or alkaline soils (e.g., lilies), many plants exhibit a wide tolerance for pH levels and are not strictly bound to one specific range.
 
-<img src="images/DecisionTreeClassifier_feature_importance.png" alt="Example Image" width="300" height="200">
-<img src="images/RandomForestClassifier_feature_importance.png" alt="Example Image" width="300" height="200">
-<img src="images/GradientBoostingClassifier_feature_importance.png" alt="Example Image" width="300" height="200">
+<img src="images/DecisionTreeClassifier_feature_importance.png" alt="Example Image" width="450" height="300">
+<img src="images/RandomForestClassifier_feature_importance.png" alt="Example Image" width="450" height="300">
+<img src="images/GradientBoostingClassifier_feature_importance.png" alt="Example Image" width="450" height="300">
 
 <ins>**Limitations of Decision Trees, Random Forest, and Gradient Boosting in Regression and Classification**</ins>
 - **Decision Trees:** 
